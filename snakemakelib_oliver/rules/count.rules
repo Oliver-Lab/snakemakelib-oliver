@@ -1,0 +1,4 @@
+rule fastq_count:
+    input: "{prefix}" + config['bio.ngs.settings']['fastq_suffix']
+    output: "{prefix}.fastq.count"
+    shell: "zcat {input} | echo $((`wc -l` / 4)) > {output}"
