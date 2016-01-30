@@ -10,9 +10,6 @@ import os
 from setuptools import setup
 from os.path import realpath, dirname, relpath, join
 
-# Extensions
-import versioneer
-
 # --------------------------------------------------
 # globals and constants
 # --------------------------------------------------
@@ -42,14 +39,11 @@ rule_suffixes = ('.rules', '.rule')
 workflow_suffixes = ('.workflow')
                     
 package_path(join(ROOT, 'snakemakelib_oliver', '_templates'))
-package_path(join(ROOT, 'snakemakelib_oliver', 'reports'))
 package_path(join(ROOT, 'snakemakelib_oliver', 'tools'))
 package_path(join(ROOT, 'snakemakelib_oliver', 'rules'), rule_suffixes)
-package_path(join(ROOT, 'snakemakelib_oliver', 'workflows'), workflow_suffixes)
 scripts = []
 
 REQUIRES = [
-    'snakemakelib',
 ]
 
 try:
@@ -69,7 +63,6 @@ SETUP_REQUIRES = [
 
 # Adding github to setup:
 DEPENDENCY_LINKS = [
-    'git+https://github.com/jfear/snakemakelib@64286dcfb34c6b5c2e2cd98fddffbc5e2f5ab3b2#egg=snakemakelib'
 ]
 
 # Integrating pytest with setuptools: see
@@ -91,13 +84,8 @@ class PyTest(Command):
         errno = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno)
 
-_version = versioneer.get_version()
-_cmdclass = versioneer.get_cmdclass()
-_cmdclass.update({'test': PyTest})
 setup(
     name="snakemakelib-oliver",
-    version=_version,
-    cmdclass=_cmdclass,
     author="Justin Fear",
     author_email="justin.m.fear@gmail.com",
     description="Snakemake rule library built on top of the snakemakelib packages",
