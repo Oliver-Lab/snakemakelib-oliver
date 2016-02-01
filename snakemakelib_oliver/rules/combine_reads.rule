@@ -1,0 +1,38 @@
+# Reads are sometimes split into bins when they come off of the sequencer.
+import os
+from snakemake.utils import update_config
+
+config_default = {
+    'settings' : {
+        'email' : os.getenv("USER_EMAIL", None),
+        'java' : {
+            'java_mem' : "8g",
+            'java_tmpdir' : "/tmp",
+        },
+        'threads' : 8,
+        'temporary_rules': [],
+        'protected_rules': [],
+    },
+    'bio.ngs.settings.': {
+        'fastq_suffix': '.fastq.gz'
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+
+rule combine_reads:
+    input: config['bio.ngs.combine']['bins']
+    output: '{prefix}' + config['bio.ngs.settings']['fastq_suffix']
+    run:
+        if len(input) == 1:
+            input = input[0]
+            output = output[0]
+            relpath = os.path.relpath(input, os.path.dirname(output))
+            odir = os.path.dirname(output)
+            oname = os.path.basename(output)
+            shell('cd {odir}; ln -fs {relpath} ./{output} && touch -h {output}'.format(odir=odir, relpath=relpath, output=oname))
+        else:
+            for i in input:
+                shell('cat {0} >> {1}'.format(i, output))
