@@ -36,8 +36,9 @@ def _get_upstream(prefix):
         pass
 
 def _combine_inputs_fq(wildcards):
+    print(wildcards.prefix)
     tgt = IOTarget(_get_upstream(wildcards.prefix), suffix=config['bio.ngs.settings']['fastq_suffix'])
-    return make_targets(tgt, config['_samples'])
+    return make_targets(tgt_re=tgt, samples=config['_samples'])
 
 rule combine_fq:
     input: _combine_inputs_fq

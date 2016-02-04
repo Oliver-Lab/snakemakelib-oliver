@@ -42,7 +42,12 @@ qc_config = {
     'qc.workflow' : {
         'aligner' : 'bowtie2',
         'fastqc' : True,
-        'trimadaptor' : True,
+        'trimadaptor': True,
+        'fastqc_trimmed': True,
+        'fastqc_bam': True,
+        'fastqc_trimmed_bam': True,
+        'align_untrimmed': True,
+        'align_trimmed': True,
         'bamfilter' : True,
         'aggregate_output_dir': 'aggregated_results',
         'report_output_dir': 'report',
@@ -55,6 +60,8 @@ qc_config = {
     'bio.ngs.settings': {
         'fastq_suffix': '.fastq.gz',
         'align_suffix': '.bam',
+        'read1_label': '',
+        'read2_label': ''
     },
     'bio.ngs.qc.fastqc': {
         'options': '-q --extract',
@@ -66,7 +73,10 @@ qc_config = {
         },
     },
     'bio.ngs.qc.cutadapt' : {
-        'rules' : ['cutadapt_cut_paired_end'] # , 'cutadapt_qc_summary'],
+        'rules' : ['cutadapt_cut_single_end'],
+    },
+    'bio.ngs.align.bowtie2' : {
+        'rules' : ['bowtie2_align_se'],
     },
     'bio.ngs.db.ucsc' : {
         'rules' : ['ucsc_wigToBigWig', 'ucsc_bedGraphToBigWig', 'ucsc_fetchChromSizes'],
@@ -81,6 +91,15 @@ if config['settings']['module_load']:
         'bio.ngs.qc.fastqc': {
             'cmd': 'module load fastqc; fastqc',
         },
+        'bio.ngs.qc.cutadapt': {
+            'cmd': 'module load cutadapt; cutadapt',
+        },
+        'bio.ngs.align.bowtie2': {
+            'cmd': 'module load bowtie/2-2.2.6; bowtie2',
+        },
+        'bio.ngs.tools.samtools': {
+            'cmd': 'module load samtools/1.2; samtools',
+        },
     }
     update_config(module_config, config)
     config = module_config
@@ -90,9 +109,15 @@ if config['settings']['module_load']:
 # Include statements
 ##############################
 include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/qc', 'fastqc.rules')
+include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/align', 'bowtie2.rules')
+
+if config['qc.workflow']['trimadaptor']:
+    include: join(SNAKEMAKE_RULES_PATH, "bio/ngs/qc", "cutadapt.rules")
 
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'atacseq.workflow'; set workdir before include statement!")
+
+ruleorder: fastqc_bam > fastqc_fastq
 
 ##############################
 # Targets
@@ -109,7 +134,8 @@ sample_re = config['sample.settings']['sample_organization'].sample_re
 # Applications
 ##############################
 # Run level targets
-FASTQC = PlatformUnitApplication(
+## FASTQC on FASTQ Files
+Fastqc = PlatformUnitApplication(
     name="fastqc",
     iotargets={
         'report': (IOTarget(run_id_re.file, suffix="_fastqc/fastqc_report.html"), None),
@@ -120,11 +146,60 @@ FASTQC = PlatformUnitApplication(
     run=config['qc.workflow']['fastqc']
 )
 
-FASTQC.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
-#FATQC.register_plot('fastqc')(atacseq_cutadapt_plot_metrics)
+Fastqc.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
 
 
-# Misc targets
+## Cutadapt
+Cutadapt = PlatformUnitApplication(
+    name="cutadapt",
+    iotargets={
+        'cutadapt':(IOTarget(run_id_re.file, suffix=".cutadapt_metrics"),
+                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "cutadapt.metrics")))},
+    units=_samples,
+    run=config['qc.workflow']['trimadaptor']
+)
+
+Cutadapt.register_post_processing_hook('cutadapt')(qc_cutadapt_post_processing_hook)
+Cutadapt.register_plot('cutadapt')(qc_cutadapt_plot_metrics)
+
+if config['qc.workflow']['trimadaptor'] & config['qc.workflow']['fastqc']:
+    fqtrim_run = True
+else: 
+    fqtrim_run = False
+
+Fastqc_trimmed = PlatformUnitApplication(
+    name="fastqc_trimmed",
+    iotargets={
+        'report': (IOTarget(run_id_re.file, suffix=".trimmed_fastqc/fastqc_report.html"), None),
+        'images': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/*.png'), None),
+        'summary': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/summary.txt'),
+                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_trimmed_summary.txt")))},
+    units=_samples,
+    run=config['qc.workflow']['fastqc_trimmed'] 
+)
+
+Fastqc_trimmed.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
+
+# Alignments with bowtie2
+Align = PlatformUnitApplication(
+    name=config['qc.workflow']['aligner'],
+    iotargets={
+        'bam': (IOTarget(run_id_re.file, suffix='.bam'),
+                None)},
+    units=_samples,
+    run=config['qc.workflow']['align_untrimmed']
+)
+
+Align_trimmed = PlatformUnitApplication(
+    name=config['qc.workflow']['aligner'],
+    iotargets={
+        'bam': (IOTarget(run_id_re.file, suffix='.trimmed.bam'),
+                None)},
+    units=_samples,
+    run=config['qc.workflow']['align_trimmed']
+)
+
+# Report targets
 #REPORT_TARGETS = [join(config['atacseq.workflow']['report_output_dir'], "atacseq_all_rulegraph.png"), join(config['atacseq.workflow']['report_output_dir'], "atacseq_summary.html")]
 REPORT_TARGETS = [join(config['qc.workflow']['report_output_dir'], "qc_summary.html"), ]
 
@@ -136,24 +211,30 @@ REPORT_TARGETS = [join(config['qc.workflow']['report_output_dir'], "qc_summary.h
 ##############################
 
 rule qc_all:
-    input: FASTQC.targets['report'] + REPORT_TARGETS
-
-
-rule qc_fastqc:
-    input: FASTQC.targets['report']
-
+    input: Fastqc.targets['report'] + Cutadapt.targets['cutadapt'] + Fastqc_trimmed.targets['report'] + Align.targets['bam'] + Align_trimmed.targets['bam'] + Fastqc_bam.targets['report'] + Fastqc_trimmed_bam.targets['report']
 
 rule qc_aggregate_fastqc_results:
-    input: fastqc = FASTQC.targets['summary']
-    output: fastqc = FASTQC.aggregate_targets['summary']
+    input: fastqc = Fastqc.targets['summary'],
+           fastqc_trimmed = Fastqc_trimmed.targets['summary']
+    output: fastqc = Fastqc.aggregate_targets['summary'],
+            fastqc_trimmed = Fastqc_trimmed.aggregate_targets['summary']
     run:
-        aggregate_results(FASTQC)
+        aggregate_results(Fastqc)
+        aggregate_results(Fastqc_trimmed)
+        aggregate_results(Fastqc_bam)
+        aggregate_results(Fastqc_trimmed_bam)
+
+rule qc_aggregate_cutadapt_results:
+    input: cutadapt = Cutadapt.targets['cutadapt']
+    output: fastqc = Cutadapt.aggregate_targets['cutadapt']
+    run:
+        aggregate_results(Cutadapt)
 
 rule qc_report:
-    input: fastqc = FASTQC.aggregate_targets['summary']
+    input: fastqc = Fastqc.aggregate_targets['summary']
     output: html = join(config['qc.workflow']['report_output_dir'], "qc_summary.html")
     run:
-        qc_summary(config, input, output, FASTQC)
+        qc_summary(config, input, output, Fastqc, Fastqc_trimmed, Cutadapt, Align, Align_trimmed)
     
 ##############################
 # Workflow-specific rules
