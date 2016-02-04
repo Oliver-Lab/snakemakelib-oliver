@@ -1,0 +1,23 @@
+# -*- snakemake -*- 
+import os
+import logging
+
+from snakemake.utils import update_config
+
+config_default = {
+    'settings' : {
+        'email' : os.getenv("USER_EMAIL", None),
+        'java' : {
+            'java_mem' : "8g",
+            'java_tmpdir' : "/tmp",
+        },
+        'threads' : 8,
+        'temporary_rules': [],
+        'protected_rules': [],
+        'tmpdir': '/tmp',
+        'module': True,
+    },
+}
+
+update_config(config_default, config)
+config = config_default

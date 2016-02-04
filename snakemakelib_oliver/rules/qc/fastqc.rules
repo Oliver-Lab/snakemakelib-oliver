@@ -1,37 +1,29 @@
-from snakemake.utils import update_config
+include: '../settings.rule'
 
 config_default = {
-    'bio.ngs.settings' : {
-        'fastq_suffix' : ".fastq.gz",
-        'align_suffix' : ".bam",
+    'bio.ngs.qc.fastqc' : {
+        'cmd' : "fastqc",
+        'options' : "-q",
     },
-    'tmpdir': '/tmp'
 }
 
 update_config(config_default, config)
 config = config_default
 
-TEMPDIR=config['tmpdir']
 
-FASTQC_COMMAND =  """
-module load fastqc
-FILENAME={output}
-OUTDIR=${{FILENAME%_report.*}}
-rm -rf $OUTDIR;
-mkdir -p $OUTDIR;
-fastqc --quiet -o $OUTDIR -d {TEMPDIR} {input} --extract;
-mv -f $OUTDIR/*/* $OUTDIR;
-rm $OUTDIR/fastqc_report.html
-mv -f $OUTDIR/*.html {output};
-rm -rf $OUTDIR/*_fastqc
-"""
-
-rule fastqc_fastq:
+rule fastqc_fq:
+    """fastqc: run fastqc on a fastq file"""
+    params: cmd = config['bio.ngs.qc.fastqc']['cmd'],
+            options = config['bio.ngs.qc.fastqc']['options'],
     input: "{prefix}" + config['bio.ngs.settings']['fastq_suffix']
-    output: "{prefix}_fastqc_report.html"
-    shell: FASTQC_COMMAND
+    output: "{prefix}_fastqc/fastqc_report.html"
+    shell: "{params.cmd} {params.options} {input}"
 
 rule fastqc_bam:
+    """fastqc: run fastqc on a fastq file"""
+    params: cmd = config['bio.ngs.qc.fastqc']['cmd'],
+            options = config['bio.ngs.qc.fastqc']['options'],
     input: "{prefix}" + config['bio.ngs.settings']['align_suffix']
-    output: "{prefix}_bam_fastqc_report.html"
-    shell: FASTQC_COMMAND
+    output: "{prefix}_bam_fastqc/fastqc_report.html"
+    shell: "{params.cmd} {params.options} {input}"
+

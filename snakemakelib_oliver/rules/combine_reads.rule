@@ -21,11 +21,29 @@ config_default = {
 update_config(config_default, config)
 config = config_default
 
+def _get_upstream(prefix):
+    """ Use file matching to determine what the upstream re is. """
+    try:
+        config['settings']['sample_organization'].run_id_re.match(prefix)
+        return config['settings']['sample_organization'].run_id_re.file
+    except:
+        pass
 
-rule combine_reads:
-    input: config['bio.ngs.combine']['bins']
+    try:
+        config['settings']['sample_organization'].sample_re.match(prefix)
+        return config['settings']['sample_organization'].raw_run_re.file
+    except:
+        pass
+
+def _combine_inputs_fq(wildcards):
+    tgt = IOTarget(_get_upstream(wildcards.prefix), suffix=config['bio.ngs.settings']['fastq_suffix'])
+    return make_targets(tgt, config['_samples'])
+
+rule combine_fq:
+    input: _combine_inputs_fq
     output: '{prefix}' + config['bio.ngs.settings']['fastq_suffix']
     run:
+        print(input)
         if len(input) == 1:
             input = input[0]
             output = output[0]
