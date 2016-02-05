@@ -29,6 +29,7 @@ config["_samples"] = initialize_input(src_re=config['sample.settings']['sample_o
                                       sample_column_map=config['sample.settings'].get("sample_column_map", ""), 
                                       sample_filter=config.get("samples", None))
 
+
 ##############################
 # Input Function
 ##############################
@@ -63,9 +64,6 @@ qc_config = {
         'read1_label': '',
         'read2_label': ''
     },
-    'bio.ngs.qc.fastqc': {
-        'options': '-q --extract',
-    },
     'bio.ngs.tools.bamtools' : {
         'filter' : {
             'options' : {'mapQuality': ">=30",
@@ -89,16 +87,16 @@ config = qc_config
 if config['settings']['module_load']:
     module_config = {
         'bio.ngs.qc.fastqc': {
-            'cmd': 'module load fastqc; fastqc',
+            'cmd': 'module load fastqc' + config['bio.ngs.qc.fastqc']['cmd'],
         },
         'bio.ngs.qc.cutadapt': {
-            'cmd': 'module load cutadapt; cutadapt',
+            'cmd': 'module load cutadapt' + config['bio.ngs.qc.cutadapt']['cmd'],
         },
         'bio.ngs.align.bowtie2': {
-            'cmd': 'module load bowtie/2-2.2.6; bowtie2',
+            'cmd': 'module load bowtie/2-2.2.6' + config['bio.ngs.align.bowtie2']['cmd'],
         },
         'bio.ngs.tools.samtools': {
-            'cmd': 'module load samtools/1.2; samtools',
+            'cmd': 'module load samtools/1.2' + config['bio.ngs.tools.samtools']['cmd'],
         },
     }
     update_config(module_config, config)
@@ -108,7 +106,8 @@ if config['settings']['module_load']:
 ##############################
 # Include statements
 ##############################
-include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/qc', 'fastqc.rules')
+#include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/qc', 'fastqc.rules')
+include: join(OLIVER_RULES_PATH, 'qc', 'fastqc.rules')
 include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/align', 'bowtie2.rules')
 
 if config['qc.workflow']['trimadaptor']:
@@ -117,7 +116,6 @@ if config['qc.workflow']['trimadaptor']:
 if workflow._workdir is None:
     raise Exception("no workdir set, or set after include of 'atacseq.workflow'; set workdir before include statement!")
 
-ruleorder: fastqc_bam > fastqc_fastq
 
 ##############################
 # Targets
@@ -139,7 +137,16 @@ Fastqc = PlatformUnitApplication(
     name="fastqc",
     iotargets={
         'report': (IOTarget(run_id_re.file, suffix="_fastqc/fastqc_report.html"), None),
-        'images': (IOTarget(run_id_re.file, suffix='_fastqc/Images/*.png'), None),
+        'adapter_content': (IOTarget(run_id_re.file, suffix='_fastqc/Images/adapter_content.png'), None),
+        'duplication_levels': (IOTarget(run_id_re.file, suffix='_fastqc/Images/duplication_levels.png'), None),
+        'kmer_profiles': (IOTarget(run_id_re.file, suffix='_fastqc/Images/kmer_profiles.png'), None),
+        'per_base_n_content': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_base_n_content.png'), None),
+        'per_base_quality': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_base_quality.png'), None),
+        'per_base_sequence_content': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_base_sequence_content.png'), None),
+        'per_sequence_gc_content': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_sequence_gc_content.png'), None),
+        'per_sequence_quality': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_sequence_quality.png'), None),
+        'per_tile_quality': (IOTarget(run_id_re.file, suffix='_fastqc/Images/per_tile_quality.png'), None),
+        'sequence_length_distribution': (IOTarget(run_id_re.file, suffix='_fastqc/Images/sequence_length_distribution.png'), None),
         'summary': (IOTarget(run_id_re.file, suffix='_fastqc/summary.txt'),
                     IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_summary.txt")))},
     units=_samples,
@@ -148,6 +155,74 @@ Fastqc = PlatformUnitApplication(
 
 Fastqc.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
 
+## FASTQC on Trimmed FASTQ Files
+Fastqc_trimmed = PlatformUnitApplication(
+    name="fastqc_trimmed",
+    iotargets={
+        'report': (IOTarget(run_id_re.file, suffix=".trimmed_fastqc/fastqc_report.html"), None),
+        'adapter_content': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/adapter_content.png'), None),
+        'duplication_levels': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/duplication_levels.png'), None),
+        'kmer_profiles': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/kmer_profiles.png'), None),
+        'per_base_n_content': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_base_n_content.png'), None),
+        'per_base_quality': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_base_quality.png'), None),
+        'per_base_sequence_content': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_base_sequence_content.png'), None),
+        'per_sequence_gc_content': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_sequence_gc_content.png'), None),
+        'per_sequence_quality': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_sequence_quality.png'), None),
+        'per_tile_quality': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/per_tile_quality.png'), None),
+        'sequence_length_distribution': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/sequence_length_distribution.png'), None),
+        'summary': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/summary.txt'),
+                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_trimmed_summary.txt")))},
+    units=_samples,
+    run=config['qc.workflow']['fastqc_trimmed'] 
+)
+
+Fastqc_trimmed.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
+
+## FASTQC on BAM Files
+Fastqc_bam = PlatformUnitApplication(
+    name="fastqc_bam",
+    iotargets={
+        'report': (IOTarget(run_id_re.file, suffix=".bam_fastqc/fastqc_report.html"), None),
+        'adapter_content': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/adapter_content.png'), None),
+        'duplication_levels': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/duplication_levels.png'), None),
+        'kmer_profiles': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/kmer_profiles.png'), None),
+        'per_base_n_content': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_base_n_content.png'), None),
+        'per_base_quality': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_base_quality.png'), None),
+        'per_base_sequence_content': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_base_sequence_content.png'), None),
+        'per_sequence_gc_content': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_sequence_gc_content.png'), None),
+        'per_sequence_quality': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_sequence_quality.png'), None),
+        'per_tile_quality': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/per_tile_quality.png'), None),
+        'sequence_length_distribution': (IOTarget(run_id_re.file, suffix='.bam_fastqc/Images/sequence_length_distribution.png'), None),
+        'summary': (IOTarget(run_id_re.file, suffix='.bam_fastqc/summary.txt'),
+                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_bam_summary.txt")))},
+    units=_samples,
+    run=config['qc.workflow']['fastqc_bam'] 
+)
+
+Fastqc_bam.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
+
+## FASTQC on Trimmed BAM Files
+Fastqc_trimmed_bam = PlatformUnitApplication(
+    name="fastqc_trimmed_bam",
+    iotargets={
+        'report': (IOTarget(run_id_re.file, suffix=".trimmed.bam_fastqc/fastqc_report.html"), None),
+        'adapter_content': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/adapter_content.png'), None),
+        'duplication_levels': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/duplication_levels.png'), None),
+        'kmer_profiles': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/kmer_profiles.png'), None),
+        'per_base_n_content': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_base_n_content.png'), None),
+        'per_base_quality': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_base_quality.png'), None),
+        'per_base_sequence_content': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_base_sequence_content.png'), None),
+        'per_sequence_gc_content': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_sequence_gc_content.png'), None),
+        'per_sequence_quality': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_sequence_quality.png'), None),
+        'per_tile_quality': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/per_tile_quality.png'), None),
+        'sequence_length_distribution': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/Images/sequence_length_distribution.png'), None),
+        'summary': (IOTarget(run_id_re.file, suffix='.trimmed.bam_fastqc/summary.txt'),
+                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_trimmed_bam_summary.txt")))},
+    units=_samples,
+    run=config['qc.workflow']['fastqc_trimmed_bam'] 
+)
+
+Fastqc_trimmed_bam.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
 
 ## Cutadapt
 Cutadapt = PlatformUnitApplication(
@@ -161,24 +236,6 @@ Cutadapt = PlatformUnitApplication(
 
 Cutadapt.register_post_processing_hook('cutadapt')(qc_cutadapt_post_processing_hook)
 Cutadapt.register_plot('cutadapt')(qc_cutadapt_plot_metrics)
-
-if config['qc.workflow']['trimadaptor'] & config['qc.workflow']['fastqc']:
-    fqtrim_run = True
-else: 
-    fqtrim_run = False
-
-Fastqc_trimmed = PlatformUnitApplication(
-    name="fastqc_trimmed",
-    iotargets={
-        'report': (IOTarget(run_id_re.file, suffix=".trimmed_fastqc/fastqc_report.html"), None),
-        'images': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/Images/*.png'), None),
-        'summary': (IOTarget(run_id_re.file, suffix='.trimmed_fastqc/summary.txt'),
-                    IOAggregateTarget(os.path.join(config['qc.workflow']['aggregate_output_dir'], "fastqc_trimmed_summary.txt")))},
-    units=_samples,
-    run=config['qc.workflow']['fastqc_trimmed'] 
-)
-
-Fastqc_trimmed.register_post_processing_hook('summary')(qc_fastqc_summary_hook)
 
 # Alignments with bowtie2
 Align = PlatformUnitApplication(
@@ -205,19 +262,22 @@ REPORT_TARGETS = [join(config['qc.workflow']['report_output_dir'], "qc_summary.h
 
 #BIGWIG_TARGETS = [x.replace(".bed", ".bed.wig.bw") for x in Dfilter.targets['bed']] + [x.replace("_peaks.xls", "_treat_pileup.bdg.bw") for x in Macs2.targets['xls']] + [x.replace("_peaks.xls", "_control_lambda.bdg.bw") for x in Macs2.targets['xls']]
 
-
 ##############################
 # Collection rules
 ##############################
 
 rule qc_all:
-    input: Fastqc.targets['report'] + Cutadapt.targets['cutadapt'] + Fastqc_trimmed.targets['report'] + Align.targets['bam'] + Align_trimmed.targets['bam'] + Fastqc_bam.targets['report'] + Fastqc_trimmed_bam.targets['report']
+    input: Fastqc.targets['report'] + Fastqc_trimmed.targets['report'] + Fastqc_bam.targets['report'] + Fastqc_trimmed_bam.targets['report'] +  \
+           Cutadapt.targets['cutadapt'] + \
+           Align.targets['bam'] + Align_trimmed.targets['bam'] 
 
 rule qc_aggregate_fastqc_results:
     input: fastqc = Fastqc.targets['summary'],
-           fastqc_trimmed = Fastqc_trimmed.targets['summary']
+           fastqc_trimmed = Fastqc_trimmed.targets['summary'],
+           fastqc_bam = Fastqc_bam.targets['summary'],
     output: fastqc = Fastqc.aggregate_targets['summary'],
-            fastqc_trimmed = Fastqc_trimmed.aggregate_targets['summary']
+            fastqc_trimmed = Fastqc_trimmed.aggregate_targets['summary'],
+            fastqc_bam = Fastqc_bam.aggregate_targets['summary']
     run:
         aggregate_results(Fastqc)
         aggregate_results(Fastqc_trimmed)
@@ -234,7 +294,7 @@ rule qc_report:
     input: fastqc = Fastqc.aggregate_targets['summary']
     output: html = join(config['qc.workflow']['report_output_dir'], "qc_summary.html")
     run:
-        qc_summary(config, input, output, Fastqc, Fastqc_trimmed, Cutadapt, Align, Align_trimmed)
+        qc_summary(config, input, output, Fastqc, Fastqc_trimmed, Fastqc_bam, Fastqc_trimmed_bam, Cutadapt, Align, Align_trimmed)
     
 ##############################
 # Workflow-specific rules

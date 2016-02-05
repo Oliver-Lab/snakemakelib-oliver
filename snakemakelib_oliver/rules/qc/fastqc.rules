@@ -1,29 +1,37 @@
-include: '../settings.rule'
-
 config_default = {
     'bio.ngs.qc.fastqc' : {
-        'cmd' : "fastqc",
-        'options' : "-q",
+        'cmd': "fastqc",
+        'options': " -q --extract -o $OUTDIR {input};",
     },
 }
 
 update_config(config_default, config)
 config = config_default
 
+FASTQC_PRE="""
+FILENAME={output[0]};
+OUTDIR=$(dirname $FILENAME);
+if [ -e $OUTDIR ]; then 
+    rm -rf $OUTDIR 
+fi
+mkdir -p $OUTDIR;
+"""
+
+FASTQC_POST = """
+mv -f $OUTDIR/*/* $OUTDIR;
+rm -rf $OUTDIR/*_fastqc;
+"""
+
+cmd = FASTQC_PRE + config['bio.ngs.qc.fastqc']['cmd'] + config['bio.ngs.qc.fastqc']['options'] + FASTQC_POST
 
 rule fastqc_fq:
     """fastqc: run fastqc on a fastq file"""
-    params: cmd = config['bio.ngs.qc.fastqc']['cmd'],
-            options = config['bio.ngs.qc.fastqc']['options'],
     input: "{prefix}" + config['bio.ngs.settings']['fastq_suffix']
     output: "{prefix}_fastqc/fastqc_report.html"
-    shell: "{params.cmd} {params.options} {input}"
+    shell: cmd
 
 rule fastqc_bam:
     """fastqc: run fastqc on a fastq file"""
-    params: cmd = config['bio.ngs.qc.fastqc']['cmd'],
-            options = config['bio.ngs.qc.fastqc']['options'],
     input: "{prefix}" + config['bio.ngs.settings']['align_suffix']
-    output: "{prefix}_bam_fastqc/fastqc_report.html"
-    shell: "{params.cmd} {params.options} {input}"
-
+    output: "{prefix}.bam_fastqc/fastqc_report.html"
+    shell: cmd
