@@ -5,67 +5,28 @@
 
 <div class="container">
     <div class="row">
-        <h2>Adapter Content</h2>
-        {% for sample in vars['fig']['adapter_content'] %}
+        <h2>Summary</h2>
+        {% for type in summaries %}
             <div class="row">
-                <div class="legend">{{ sample }}</div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['adapter_content'][sample]['fastqc'] }}" />
-                    <div class="legend">raw</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['adapter_content'][sample]['fastqc_trimmed'] }}" />
-                    <div class="legend">trimmed</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['adapter_content'][sample]['fastqc_bam'] }}" />
-                    <div class="legend">bam</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['adapter_content'][sample]['fastqc_trimmed_bam'] }}" />
-                    <div class="legend">trimmed bam</div>
-                </div>
+                <div class="legend">{{ type }}</div>
+                {{ summaries[type] }}
             </div>
         {% endfor %}
+        {% for section in vars %}
+            <h2>{{ section }}</h2>
+            {% for sample in vars[section] %}
+                <div class="row">
+                    <div class="legend">{{ sample }}</div>
+                    {% for type in vars[section][sample] %}
+                        <div class="col-sm-3 thumbnail figure">
+                            <a class="reference internal image-reference" href="{{ vars[section][sample][type]['file'] }}"><img src="{{ vars[section][sample][type]['file'] }}" /></a>
+                            <div class="legend">{{ vars[section][sample][type]['caption'] }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
 
-    <h2>Duplication Levels</h2>
-        {% for sample in vars['samples'] %}
-            <div class="row">
-                <div class="legend">{{ sample }}</div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['duplication_levels'][sample]['fastqc'] }}" />
-                    <div class="legend">raw</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['duplication_levels'][sample]['fastqc_trimmed'] }}" />
-                    <div class="legend">trimmed</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['duplication_levels'][sample]['fastqc_bam'] }}" />
-                    <div class="legend">bam</div>
-                </div>
-                <div class="col-sm-3 thumbnail figure">
-                    <img src="{{ vars['fig']['duplication_levels'][sample]['fastqc_trimmed_bam'] }}" />
-                    <div class="legend">trimmed bam</div>
-                </div>
-            </div>
+            {% endfor %}
         {% endfor %}
-
     </div>
-
-
-
-    <h2>Kmer Profiles</h2>
-
-    <h2>Per Base N Content</h2>
-
-    <h2>Per Base Quality</h2>
-
-    <h2>Per Base Sequence Content</h2>
-    <h2>Per Sequence GC Content</h2>
-    <h2>Per Sequence Quality</h2>
-    <h2>Per Tile Quality</h2>
-    <h2>Sequence length distribution</h2>
-
 </div>
 {% endblock %}

@@ -10,3 +10,19 @@ def resource_fastqc_summary(uri, **kwargs):
                            names = ["flag", "statistic", "sample"],
                            index_col=["sample"])
     return data
+
+@resource.register('.+\_fastqc/fastqc_data.txt')
+@annotate_by_uri
+def resource_fastqc_data(uri, **kwargs):
+    with open(uri):
+        data = "".join(fh)
+
+    sections = re.split("^>>[^END]", data)
+
+
+
+
+        data = pd.read_csv(uri, sep="\t", header=None, comment="#",
+                           names = ["flag", "statistic", "sample"],
+                           index_col=["sample"])
+    return data
