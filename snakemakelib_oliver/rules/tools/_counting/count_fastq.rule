@@ -1,0 +1,18 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.counting' : {
+        'count_fastq' : {
+            'threads': config['settings']['threads'],
+        },
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+rule count_fastq:
+    """Count the number of reads in a fastq file"""
+    input: "{prefix}" + config['bio.ngs.settings']['fastq_suffix']
+    output: "{prefix}.sam.count"
+    threads: config['bio.ngs.tools.counting']['count_fastq']['threads']
+    shell: "cat {intput} | echo $((`wc -l` / 4)) > {output[0]}"

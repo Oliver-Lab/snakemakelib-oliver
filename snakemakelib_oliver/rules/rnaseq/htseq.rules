@@ -1,0 +1,15 @@
+DEFAULT_RULES = ['htseq_count_forward']
+
+config_default = {
+    'bio.ngs.rnaseq.htseq' : {
+        'cmd': 'htseq-count',
+        'options' : '-f bam -r pos -q ',
+        'rules': DEFAULT_RULES,
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+for rule in config['bio.ngs.rnaseq.htseq']['rules']:
+    include: os.path.join("_htseq", rule + ".rule")

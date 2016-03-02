@@ -1,0 +1,15 @@
+DEFAULT_RULES = ['count_bam', 'count_sam', 'count_fastq_gz']
+
+config_default = { 
+    'bio.ngs.tools.counting' : {
+        'threads' : config['settings']['threads'],
+        'options' : "",
+        'rules' : DEFAULT_RULES,
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+for rule in config['bio.ngs.tools.counting']['rules']:
+    include: os.path.join("_counting", rule + ".rule")

@@ -1,0 +1,30 @@
+rule deseq2_sampleTable:
+    input: sampleinfo = config['sample.settings']['sampleinfo']
+    output: "{prefix}/design.csv"
+    run:
+        import pandas as pd
+
+        sID = None
+        rID = None
+        dID = None
+        for k, v in config['sample.settings']['sample_column_map'].items():
+            if v == 'SM':
+                sID = k
+            elif v == 'PU':
+                rID = k
+            elif v == 'DATE':
+                dID = k
+            
+        df = pd.read_csv(str(input.sampleinfo))
+        try:
+            df = df.drop(rID, axis=1)
+        except:
+            pass
+        try:
+            df = df.drop(dID, axis=1)
+        except:
+            pass
+
+        df = df.drop_duplicates(sID)
+        df.to_csv(output[0], index=False)
+

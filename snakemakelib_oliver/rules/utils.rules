@@ -1,0 +1,13 @@
+rule rename_sam:
+    input: "{prefix}.sam"
+    output: "{prefix}" + config['bio.ngs.settings']['align_prefix'] + '.sam'
+    shell: """
+    cp {input} {output[0]}
+    """
+
+rule rename_trimmed_sam:
+    input: "{prefix}.trimmed.sam"
+    output: "{prefix}" + config['bio.ngs.settings']['align_prefix'] + '.trimmed.sam'
+    shell: """
+    cp {input} {output[0]}
+    """

@@ -1,0 +1,11 @@
+rule htseq_count_combine_forward_reverse:
+    input: forward = "{prefix}/Forward.htseq.counts",
+           reverse = "{prefix}/Reverse.htseq.counts",
+    output: "{prefix}/genic.counts"
+    run:
+        import pandas as pd
+        fcounts = pd.read_csv(input.forward, index_col='FBgn')
+        rcounts = pd.read_csv(input.forward, index_col='FBgn')
+
+        genic = fcounts + rcounts
+        geneic.to_csv(output[0])

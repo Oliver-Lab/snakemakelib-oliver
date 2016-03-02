@@ -1,0 +1,16 @@
+# -*- snakemake -*-
+DEFAULT_RULES = []
+
+config_default = {
+    'bio.ngs.qc.rseqc' : {
+        'rules': DEFAULT_RULES,
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+for rule in config['bio.ngs.qc.rseqc']['rules']:
+    include: os.path.join("_rseqc", rule + ".rule")
+
+

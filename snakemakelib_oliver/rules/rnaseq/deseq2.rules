@@ -1,0 +1,13 @@
+DEFAULT_RULES = ['deseq2_LET', 'deseq2']
+
+config_default = {
+    'bio.ngs.rnaseq.deseq2' : {
+        'rules': DEFAULT_RULES,
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+for rule in config['bio.ngs.rnaseq.deseq2']['rules']:
+    include: os.path.join("_deseq2", rule + ".rule")

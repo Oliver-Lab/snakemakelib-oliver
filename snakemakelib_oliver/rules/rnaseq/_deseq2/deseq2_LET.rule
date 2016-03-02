@@ -1,0 +1,32 @@
+""" Uses DESeq2 normalization procedure to calcualte the low expression theshold. """
+
+rule deseq2_LET:
+    input: genic = "{prefix}/genic.htseq.counts",
+           intergenic = "{prefix}/Intergenic.nostrand.htseq.counts"
+    output: "{prefix}/lowExpressionThreshold.txt"
+    run:
+        import pandas as pd
+        import numpy as np
+
+        # Import counts
+        gcounts = pd.read_csv(str(input.genic), index_col='FBgn')
+        icounts = pd.read_csv(str(input.intergenic), index_col='FBgn')
+        counts = pd.concat([gcounts, icounts])
+
+        # Remove genes with all 0's across samples
+        clean = counts.loc[counts.sum(axis=1) > 0, :]
+        clean = clean[clean.index.str.startswith('_') != True]
+
+
+        # Estimate size factors according to DESeq2
+        # estimateSizeFactorsForMatrix function
+        loggeomeans = np.log(clean).mean(axis=1)
+        sizeFactors = clean.apply(lambda cnts: np.exp(np.median((np.log(cnts) - loggeomeans).replace([np.inf, -np.inf], np.nan).dropna())))
+
+        # Normalize counts by sizeFactors
+        lognorm = np.log2((clean / sizeFactors) + 1)
+
+        # Calculate the low expression threshold (LET)
+        LET = np.percentile(lognorm.loc[lognorm.index.str.startswith('intergenic')], 95)
+        with open(output[0], 'w') as OUT:
+            OUT.write(str(LET))

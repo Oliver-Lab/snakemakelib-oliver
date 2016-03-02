@@ -1,0 +1,8 @@
+rule htseq_count_forward_intergenic:
+    params: cmd = config['bio.ngs.rnaseq.htseq']['cmd'],
+            options = config['bio.ngs.rnaseq.htseq']['options'],
+    input: bam = "{prefix}.sort.bam",
+           anno = config['bio.ngs.settings']['annotation']['intergenic_annot_gtf']
+    output: "{prefix}.intergenic.forward.htseq.counts"
+    shell:
+        "{params.cmd} {params.options} -s yes {input.bam} {input.anno} > {output[0]}"

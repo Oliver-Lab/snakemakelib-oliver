@@ -1,0 +1,19 @@
+# -*- snakemake -*-
+config_default = {
+    'bio.ngs.tools.counting' : {
+        'count_bam' : {
+            'threads': config['settings']['threads'],
+        },
+    },
+}
+
+update_config(config_default, config)
+config = config_default
+
+rule count_bam:
+    """Count the number of aligned reads in a bam file"""
+    params: samtools = config['bio.ngs.tools.samtools']['cmd'],
+    input: "{prefix}.bam"
+    output: "{prefix}.bam.count"
+    threads: config['bio.ngs.tools.counting']['count_bam']['threads']
+    shell: "{params.samtools} view -F 0x04 {input} -c  > {output[0]}"

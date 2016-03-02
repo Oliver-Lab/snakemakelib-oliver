@@ -1,5 +1,6 @@
 # Reads are sometimes split into bins when they come off of the sequencer.
 import os
+import sys
 from snakemake.utils import update_config
 
 config_default = {
@@ -24,27 +25,39 @@ config = config_default
 def _get_upstream(prefix):
     """ Use file matching to determine what the upstream re is. """
     try:
-        config['settings']['sample_organization'].run_id_re.match(prefix)
-        return config['settings']['sample_organization'].run_id_re.file
+        config['sample.settings']['sample_organization'].raw_run_re.match(prefix)
+        return ''
     except:
         pass
 
     try:
-        config['settings']['sample_organization'].sample_re.match(prefix)
-        return config['settings']['sample_organization'].raw_run_re.file
+        config['sample.settings']['sample_organization'].run_id_re.match(prefix)
+        return config['sample.settings']['sample_organization'].raw_run_re.file
     except:
         pass
 
+    try:
+        config['sample.settings']['sample_organization'].sample_re.match(prefix)
+        return config['sample.settings']['sample_organization'].run_id_re.file
+    except:
+        pass
+
+
 def _combine_inputs_fq(wildcards):
-    print(wildcards.prefix)
-    tgt = IOTarget(_get_upstream(wildcards.prefix), suffix=config['bio.ngs.settings']['fastq_suffix'])
-    return make_targets(tgt_re=tgt, samples=config['_samples'])
+    #print(_get_upstream(wildcards.prefix))
+    upstream = _get_upstream(wildcards.prefix)
+
+    if upstream:
+        tgt = IOTarget(upstream, suffix=config['bio.ngs.settings']['fastq_suffix'])
+        return make_targets(tgt_re=tgt, samples=config['_samples'])
+    else:
+        return ''
 
 rule combine_fq:
     input: _combine_inputs_fq
     output: '{prefix}' + config['bio.ngs.settings']['fastq_suffix']
     run:
-        print(input)
+        #print(input)
         if len(input) == 1:
             input = input[0]
             output = output[0]

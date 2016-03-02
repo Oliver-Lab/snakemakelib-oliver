@@ -1,0 +1,74 @@
+from snakemake.utils import R
+
+rule deseq2:
+    input: sampleinfo = config['sample.settings']['sampleinfo'],
+           genic = "{prefix}/genic.htseq.counts",
+           LET = "{prefix}/lowExpressionThreshold.txt"
+    output: table="{prefix}/deseq2_results.csv",
+            meta="{prefix}/deseq2_meta.txt"
+    params: model = config['sample.settings']['model'],
+            factors = config['sample.settings']['factors']
+    run:
+        R("""
+        library(DESeq2)
+
+        # Import sample information
+        colData = read.table('{input.sampleinfo}', sep=',', header=TRUE)
+
+        for(i in 1:length({params.factors})){{
+            f = {params.factors}[i]
+            colData[,f] = as.factor(colData[,f])
+        }}
+
+        # Import genic counts
+        genic = read.table('{input.genic}', sep=',', header=TRUE)
+
+        # remove htseq comment lines that start with '__'
+        noDunder = function(x){{
+            if(grep('__', x)){{
+                return(FALSE)
+            }} else{{
+                return(TRUE)
+            }}
+        }}
+        genic = genic[apply(genic[1], 1, noDunder),]
+
+        # Remove genes that are not expressed in experiment
+        rc = rowSums(genic[,-1])
+        T = genic[rc>0, -1]
+        rownames(T) = genic[rc>0,1]
+
+        # Create DESeq2 data object
+        dds = DESeqDataSetFromMatrix(T, colData, {params.model})
+        dds = estimateSizeFactors(dds)
+
+        # Pre-filter counts below low expression Threshold
+        normCounts = counts(dds, normalized=TRUE)
+
+        LET = as.numeric(readChar({input.LET}, nchars=1e6))
+        oLET = 2^LET - 1
+
+        indNCS_DESeq = which(apply(normCounts, 1, function(x){{all(x<oLET)}}) == TRUE)
+        keep_DESeq = rep(TRUE, nrow(normCounts))
+        keep_DESeq[indNCS_DESeq] = FALSE
+        dds = dds[keep_DESeq,]
+
+        # Fit model
+        dds = DESeq(dds)
+        res = results(dds, tidy=TRUE)
+        res = res[order(res$padj),]
+
+        # Write output table
+        write.table(res, file="{output.table}", sep=',', row.names=FALSE, quote=FALSE)
+
+        # Write out metadata
+        res2 = results(dds)
+        m = sapply(elementMetadata(res2)$description, function (x) paste("#", x), USE.NAMES=FALSE)
+        m = c(
+          m,
+          paste("# Design:", deparse(design(dds)))
+        )
+        fn = "{output.meta}"
+        write(m, fn)
+        write.table(colData(dds), file=fn, append=TRUE, quote=FALSE, sep='\t')
+        """)
