@@ -38,10 +38,11 @@ def package_path(path, filters=()):
 rule_suffixes = ('.rules', '.rule')
 workflow_suffixes = ('.workflow')
                     
+package_path(join(ROOT, 'bin'))
 package_path(join(ROOT, 'snakemakelib_oliver', '_templates'))
 package_path(join(ROOT, 'snakemakelib_oliver', 'tools'))
 package_path(join(ROOT, 'snakemakelib_oliver', 'rules'), rule_suffixes)
-scripts = []
+scripts = ['bin/slurmSnake']
 
 REQUIRES = [
 ]
