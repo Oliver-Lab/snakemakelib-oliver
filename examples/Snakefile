@@ -1,0 +1,27 @@
+# -*- snakemake -*-
+from os.path import join
+
+from snakemake.workflow import workflow
+from snakemakelib.io import IOTarget, IOSampleTarget
+from snakemakelib.sample.organization import sample_org
+
+from snakemakelib_oliver.workflows import OLIVER_WORKFLOWS_PATH
+
+#shell.prefix('set -o pipefail; set -e; source activate sndevel;')
+shell.prefix('set -o pipefail; set -e;')
+workdir: "."
+configfile: "./smlconf.yaml"
+
+datadir = 'data'
+outdir = 'output'
+
+# raw_run_re, run_id_re, sample_re
+config['sample.settings']['sample_organization'] = sample_org(IOTarget(join(datadir, "DamID-{DATE}", "Sample_{SM}", "{SM}*")),
+                                                       IOTarget(join(outdir, "{SM}", "{SM}_{PU}")),
+                                                       IOSampleTarget(join(outdir, "{SM}", "{SM}")))
+
+
+# Run Workflow
+#include: join(OLIVER_WORKFLOWS_PATH, 'prep', 'prep.workflow')
+#include: join(OLIVER_WORKFLOWS_PATH, 'qc', 'qc.workflow')
+include: join(OLIVER_WORKFLOWS_PATH, 'dge', 'dge.workflow')

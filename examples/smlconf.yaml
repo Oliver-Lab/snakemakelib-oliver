@@ -1,0 +1,41 @@
+settings:
+    module_load: True
+    tmpdir: '/tmp'
+    threads: 1
+
+sample.settings:
+    ercc: False
+    sampleinfo: data/sample_info.csv
+    sample_column_map:
+        sample_id: SM
+        run: PU
+        date: DATE
+    run_map:
+        run1: 10-20-2015
+        run2: 01-11-2016
+    model: ~ driver + target
+    factors:
+        - sex
+        - tissue
+        - driver
+        - target
+
+bio.ngs.settings:
+    fastq_suffix: '.fastq.gz'
+    # For single end data, keep these blank
+    read1_label: ''
+    read2_label: ''
+    annotation: 
+        transcript_annot_gtf: /data/Oliverlab/references/genomes/Dmelanogaster/dm6/annotation/FlyBase_6.08/dmel-all-r6.08.chr.ercc.gtf
+        intergenic_annot_gtf: /data/Oliverlab/references/genomes/Dmelanogaster/dm6/annotation/FlyBase_6.08/dmel-all-r6.08.chr.intergenic.gtf
+    db:
+        build: ''
+
+bio.ngs.align.bowtie2:
+    threads: 4
+    index: /data/Oliverlab/references/genomes/Dmelanogaster/dm6/bowtie2/dm6-noextra.ercc
+bio.ngs.rnaseq.tuxedo:
+    threads: 4
+    index: /data/Oliverlab/references/genomes/Dmelanogaster/dm6/bowtie2/dm6-noextra.ercc
+
+

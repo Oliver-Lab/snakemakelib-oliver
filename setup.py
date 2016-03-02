@@ -93,9 +93,9 @@ setup(
     license="MIT",
     url="http://github.com/Oliver-Lab/snakemakelib-oliver",
     scripts=scripts,
-    packages=[
-    ],
+    packages=[],
     package_data={'snakemakelib_oliver': package_data},
+    data_files=[('config', ['data/slurm_cluster_config.yaml'])],
     setup_requires=SETUP_REQUIRES,
     install_requires=REQUIRES,
     dependency_links=DEPENDENCY_LINKS,
