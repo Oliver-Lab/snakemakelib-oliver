@@ -11,5 +11,9 @@ def copy_bootstrap(path):
 
     shutil.copyfile(os.path.join(OLIVER_PATH, 'static/css/bootstrap-theme.min.css'), os.path.join(path, 'css/bootstrap-theme.min.css')) 
     shutil.copyfile(os.path.join(OLIVER_PATH, 'static/css/bootstrap.min.css'), os.path.join(path, 'css/bootstrap.min.css')) 
-    shutil.copyfile(os.path.join(OLIVER_PATH, 'static/css/dashboard.css'), os.path.join(path, 'css/dashboard.css')) 
     shutil.copyfile(os.path.join(OLIVER_PATH, 'static/js/bootstrap.min.js'), os.path.join(path, 'js/bootstrap.min.js')) 
+
+    shutil.copyfile(os.path.join(OLIVER_PATH, 'static/css/dashboard.css'), os.path.join(path, 'css/dashboard.css')) 
+
+    shutil.copyfile(os.path.join(OLIVER_PATH, 'static/js/bokeh-0.11.1.min.js'), os.path.join(path, 'js/bokeh-0.11.1.min.js')) 
+    shutil.copyfile(os.path.join(OLIVER_PATH, 'static/css/bokeh-0.11.1.min.css'), os.path.join(path, 'js/bokeh-0.11.1.min.css')) 
