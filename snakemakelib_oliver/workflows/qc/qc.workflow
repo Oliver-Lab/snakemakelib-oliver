@@ -329,7 +329,6 @@ Htseq = SampleApplication(
     },
     units=_samples,
 )
-
 Htseq.register_post_processing_hook('forward')(qc_htseq_post_processing_hook)
 apps['Htseq'] = Htseq
 
