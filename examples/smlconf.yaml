@@ -4,7 +4,8 @@ settings:
     threads: 1
 
 sample.settings:
-    ercc: False
+    ercc: True
+    stranded: True
     sampleinfo: data/sample_info.csv
     sample_column_map:
         sample_id: SM
