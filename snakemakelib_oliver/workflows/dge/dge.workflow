@@ -291,6 +291,15 @@ rule run_dge:
            Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic'] +\
            DESeq2_TARGETS
 
+rule dge_align:
+    input: Align.targets['bam']
+
+rule dge_count:
+    input: Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic']
+
+rule dge_deseq2:
+    input: DESeq2_TARGETS
+
 rule debug:
     input: Align.targets['bam'] +\
            Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic'] 
