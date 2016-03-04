@@ -6,13 +6,13 @@ tuxedo_tophat_se:
 bowtie2_align_se:
     mem: "4000"
 picard_mark_duplicates:
-    mem: "7000"
+    mem: "10000"
     time: "10:00:00"
 picard_build_bam_index:
-    mem: "7000"
+    mem: "10000"
 picard_sort_sam:
-    mem: "7000"
+    mem: "10000"
 gatk_realigner_target_creator:
-    mem: "7000"
+    mem: "10000"
 gatk_indel_realigner:
-    mem: "7000"
+    mem: "10000"
