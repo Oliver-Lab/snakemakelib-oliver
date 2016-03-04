@@ -1,0 +1,7 @@
+rule htseq_count_copy_nonstranded_to_genic:
+    input: "{prefix}/Nonstranded.htseq.counts"
+    output: "{prefix}/genic.htseq.counts"
+    params: odir = "{prefix}",
+            fcounts = "Nonstranded.htseq.counts",
+            gcounts = "genic.htseq.counts",
+    shell: "cd {params.odir}; ln -s {params.fcounts} {params.gcounts}"

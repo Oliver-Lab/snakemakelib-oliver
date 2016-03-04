@@ -1,9 +1,9 @@
-rule htseq_count_nostrand:
+rule htseq_count_nonstranded_intergenic:
     params: cmd = config['bio.ngs.rnaseq.htseq']['cmd'],
             options = config['bio.ngs.rnaseq.htseq']['options'],
     input: bam = "{prefix}.sort.bam",
-           anno = config['bio.ngs.settings']['annotation']['transcript_annot_gtf']
-    output: "{prefix}.unstranded.htseq.counts"
+           anno = config['bio.ngs.settings']['annotation']['intergenic_annot_gtf']
+    output: "{prefix}.intergenic.nonstranded.htseq.counts"
     shell:
         "{params.cmd} {params.options} -s no {input.bam} {input.anno} > {output[0]}"
 

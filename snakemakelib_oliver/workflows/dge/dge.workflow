@@ -55,6 +55,10 @@ def _rg_fn(prefix):
 # Set configuration for current workflow, setting can be overridden by the
 # user.
 dge_config = {
+    'sample.settings': {
+        'stranded': 'True',
+        'ERCC': 'True',
+    },
     'dge.workflow' : {
         'aligner' : 'tophat',
         'aggregate_output_dir': 'aggregated_results',
@@ -77,13 +81,13 @@ dge_config = {
         'read2_label': ''
     },
     'bio.ngs.tools.samtools' : {
-        'rules': ['samtools_sort', 'samtools_index'],
+        'rules': [],
         'merge' : {
             'inputfun' : _dge_samtools_merge_bam_input_fn,
         },
     },
     'bio.ngs.rnaseq.tuxedo' : {
-        'rules' : ['tuxedo_cufflinks_from_bam', 'tuxedo_tophat_se'],
+        'rules' : [],
         'version2': True,
         'rg_fn': _rg_fn,
         'cufflinks': {
@@ -98,8 +102,7 @@ dge_config = {
         'rules' : ['ucsc_wigToBigWig', 'ucsc_bedGraphToBigWig', 'ucsc_fetchChromSizes'],
     },
     'bio.ngs.rnaseq.htseq': {
-        'rules': ['htseq_count_forward', 'htseq_count_reverse', 
-                  'htseq_count_nostrand_intergenic', 'htseq_count_copy_forward_to_genic'],
+        'rules': [],
     },
     'bio.ngs.rnaseq.deseq2': {
         'rules': ['deseq2_LET', 'deseq2', 'deseq2_sampleTable']
@@ -135,7 +138,34 @@ if config['settings']['module_load']:
 ##############################
 # Include statements
 ##############################
-localrules: deseq2, agg_align, agg_htseq, dge_report, htseq_count_copy_forward_to_genic
+
+# Set up conditional rule import
+## Htseq
+if config['sample.settings']['stranded'].lower() == 'forward':
+    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 
+                                               'htseq_count_copy_forward_to_genic']
+elif (config['sample.settings']['stranded'].lower() == 'reverse') or (config['sample.settings']['stranded'] is True):
+    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 
+                                               'htseq_count_copy_reverse_to_genic']
+elif (config['sample.settings']['stranded'].lower() == 'nonstranded') or (config['sample.settings']['stranded'] is False):
+    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_nonstranded', 'htseq_count_nonstranded_intergenic', 'htseq_count_copy_nonstranded_to_genic']
+else:
+    raise Exception("you must set sample.settings['stranded'] to one of {True, False, forward, reverse, nonstranded}. True assumes reverse stranded and False assumes nonstranded.")
+
+## Aligner
+ALIGNER = config['dge.workflow']['aligner'] 
+if ALIGNER == 'tophat':
+    config['bio.ngs.settings']['align_prefix'] = '.tophat2'
+    config['bio.ngs.rnaseq.tuxedo']['rules'] = ['tuxedo_cufflinks_from_bam', 'tuxedo_tophat_se']
+    config['bio.ngs.tools.samtools']['rules'] = ['samtools_sort', 'samtools_index']
+elif ALIGNER == 'bowtie2':
+    config['bio.ngs.settings']['align_prefix'] = '.bowtie2'
+    config['bio.ngs.tools.samtools']['rules'] = ['samtools_sort', 'samtools_index', 'samtools_sam2bam']
+else:
+    raise Exception("you must set dge.workflow['aligner'] to one of {bowtie2, tophat}")
+
+ALIGN_PREFIX = config['bio.ngs.settings']['align_prefix']
+ALIGN_SUFFIX = config['bio.ngs.settings']['align_suffix'] 
 
 # Import all of the required rules.
 if workflow._workdir is None:
@@ -145,25 +175,13 @@ include: join(SNAKEMAKE_RULES_PATH, 'utils.rules')
 include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/tools', 'samtools.rules')
 include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/rnaseq', 'tuxedo.rules')
 
+include: join(OLIVER_RULES_PATH, 'utils.rules')
+include: join(OLIVER_RULES_PATH, 'align', 'bowtie2.rules')
 include: join(OLIVER_RULES_PATH, 'tools', 'counting.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'htseq.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'deseq2.rules')
 
-## Pick which alinger to use
-ALIGNER = config['dge.workflow']['aligner'] 
-if ALIGNER == 'tophat':
-    config['bio.ngs.settings']['align_prefix'] = '.tophat2'
-elif ALIGNER == 'bowtie2':
-    config['bio.ngs.settings']['align_prefix'] = '.bowtie2'
-    include: join(OLIVER_RULES_PATH, 'utils.rules')
-    include: join(OLIVER_RULES_PATH, 'align', 'bowtie2.rules')
-    include: join(SNAKEMAKE_RULES_PATH, 'bio/ngs/tools/_samtools', 'samtools_sam2bam.rule')
-else:
-    raise Exception("you must set dge.workflow['aligner'] to one of {bowtie2, tophat}")
-
-ALIGN_PREFIX = config['bio.ngs.settings']['align_prefix']
-ALIGN_SUFFIX = config['bio.ngs.settings']['align_suffix'] 
-
+localrules: deseq2, agg_align, agg_htseq, dge_report, htseq_count_copy_forward_to_genic, htseq_count_copy_reverse_to_genic, htseq_count_copy_nonstranded_to_genic
 
 ##############################
 # Workflow-specific rules
@@ -234,8 +252,15 @@ Counts = PlatformUnitApplication(
 apps['Counts'] = Counts
 
 ## Sample Level
-### Coverage Counts
-Htseq = SampleApplication(
+### Genic Coverage Counts
+if config['sample.settings']['stranded']:
+    _run_stranded = True
+    _run_nonstranded = False
+else:
+    _run_stranded = False
+    _run_nonstranded = True
+
+HtseqStranded = SampleApplication(
     name="htseq",
     iotargets={
         'forward': (IOTarget(run_id_re.file, suffix=ALIGN_PREFIX + ".unique" + ".forward.htseq.counts"),
@@ -244,17 +269,33 @@ Htseq = SampleApplication(
                         IOAggregateTarget(os.path.join(config['dge.workflow']['aggregate_output_dir'], "Reverse.htseq.counts"))),
     },
     units=_samples,
-    run=True
+    run=_run_stranded
 )
-Htseq.register_aggregate_post_processing_hook('forward')(dge_htseq_post_processing_hook)
-Htseq.register_aggregate_post_processing_hook('reverse')(dge_htseq_post_processing_hook)
-apps['Htseq'] = Htseq
+HtseqStranded.register_aggregate_post_processing_hook('forward')(dge_htseq_post_processing_hook)
+HtseqStranded.register_aggregate_post_processing_hook('reverse')(dge_htseq_post_processing_hook)
 
+HtseqNonstranded = SampleApplication(
+    name="htseq",
+    iotargets={
+        'nonstranded': (IOTarget(run_id_re.file, suffix=ALIGN_PREFIX + ".unique" + ".nonstranded.htseq.counts"),
+                        IOAggregateTarget(os.path.join(config['dge.workflow']['aggregate_output_dir'], "Nonstranded.htseq.counts"))),
+    },
+    units=_samples,
+    run=_run_stranded
+)
+HtseqNonstranded.register_aggregate_post_processing_hook('nonstranded')(dge_htseq_post_processing_hook)
+
+if config['sample.settings']['stranded']:
+    apps['Htseq'] = HtseqStranded
+else:
+    apps['Htseq'] = HtseqNonstranded
+
+### Intergenic Coverage Counts
 HtseqInter = SampleApplication(
     name="htseq_intergenic",
     iotargets={
-        'intergenic': (IOTarget(run_id_re.file, suffix=ALIGN_PREFIX + ".unique" + ".intergenic.nostrand.htseq.counts"),
-                        IOAggregateTarget(os.path.join(config['dge.workflow']['aggregate_output_dir'], "Intergenic.nostrand.htseq.counts"))),
+        'intergenic': (IOTarget(run_id_re.file, suffix=ALIGN_PREFIX + ".unique" + ".intergenic.nonstranded.htseq.counts"),
+                        IOAggregateTarget(os.path.join(config['dge.workflow']['aggregate_output_dir'], "Intergenic.nonstranded.htseq.counts"))),
     },
     units=_samples,
     run=True
@@ -278,14 +319,14 @@ apps['DESeq2'] = DESeq2_TARGETS
 
 rule run_dge:
     input: Align.targets['bam'] + \
-           Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic'] +\
+           HtseqStranded.targets['forward'] + HtseqStranded.targets['reverse'] + HtseqNonstranded.targets['nonstranded'] + HtseqInter.targets['intergenic'] +\
            DESeq2_TARGETS
 
 rule dge_align:
     input: Align.targets['bam']
 
 rule dge_count:
-    input: Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic']
+    input: Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqNonstranded.targets['nonstranded'] + HtseqInter.targets['intergenic']
 
 rule dge_deseq2:
     input: DESeq2_TARGETS
@@ -301,20 +342,25 @@ rule agg_align:
         aggregate_results(Align)
 
 rule agg_htseq:
-    input: htseq_forward = Htseq.targets['forward'],
-           htseq_reverse = Htseq.targets['reverse'],
+    input: htseq_forward = HtseqStranded.targets['forward'],
+           htseq_reverse = HtseqStranded.targets['reverse'],
+           htseq_nonstranded = HtseqNonstranded.targets['nonstranded'],
            htseq_inter = HtseqInter.targets['intergenic']
-    output: htseq_forward = Htseq.aggregate_targets['forward'],
-            htseq_reverse = Htseq.aggregate_targets['reverse'],
+    output: htseq_forward = HtseqStranded.aggregate_targets['forward'],
+            htseq_reverse = HtseqStranded.aggregate_targets['reverse'],
+            htseq_nonstranded = HtseqNonstranded.aggregate_targets['nonstranded'],
             htseq_inter = HtseqInter.aggregate_targets['intergenic']
     run:
-        aggregate_results(Htseq)
+        aggregate_results(HtseqStranded)
+        aggregate_results(HtseqStranded)
+        aggregate_results(HtseqNonstranded)
         aggregate_results(HtseqInter)
 
 rule dge_report:
     input: align = Align.aggregate_targets['log'],
            htseq_forward = Htseq.aggregate_targets['forward'],
            htseq_reverse = Htseq.aggregate_targets['reverse'],
+           htseq_nonstranded = HtseqNonstranded.aggregate_targets['nonstranded'],
            rulegraph = join(config['dge.workflow']['report_output_dir'], "static/images/dge_all_rulegraph.png")
     output: html = join(config['dge.workflow']['report_output_dir'], "index.html")
     run:

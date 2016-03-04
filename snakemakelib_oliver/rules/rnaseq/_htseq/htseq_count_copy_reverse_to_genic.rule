@@ -1,0 +1,7 @@
+rule htseq_count_copy_reverse_to_genic:
+    input: "{prefix}/Reverse.htseq.counts"
+    output: "{prefix}/genic.htseq.counts"
+    params: odir = "{prefix}",
+            fcounts = "Reverse.htseq.counts",
+            gcounts = "genic.htseq.counts",
+    shell: "cd {params.odir}; ln -s {params.fcounts} {params.gcounts}"
