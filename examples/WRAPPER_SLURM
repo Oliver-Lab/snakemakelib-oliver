@@ -1,18 +1,25 @@
 #!/bin/bash
+#SBATCH --job-name="smk"
+#SBATCH --cpus-per-task=1
+#SBATCH --time=48:00:00
+#SBATCH --mem=700
 
-#PBS -N smk
+source activate sndevel
 
 SNAKEFILE=$1
 EXTRA=$2
 
-snakemake \
+(time snakemake \
     -p \
     --rerun-incomplete \
     --jobname "s.{rulename}.{jobid}.sh" \
     -j 999 \
     --verbose \
-    --cluster-config slurm_cluster_config.yaml \
+    --cluster-config $HOME/devel/snakemakelib-oliver/data/slurm_cluster_config.yaml \
     --cluster "sbatch --cpus-per-task {threads} --mem {cluster.mem} --time {cluster.time} --output=slurm_logs/$EXTRA.%j --error=slurm_logs/$EXTRA.%j" \
     --latency-wait=60 \
     -s $SNAKEFILE \
     $EXTRA \
+    ) > "${SNAKEFILE}.log" 2>&1
+
+mail -s "$SNAKEFILE finished" $USER < "${SNAKEFILE}.log"
