@@ -68,7 +68,7 @@ qc_config = {
         'read2_label': ''
     },
     'bio.ngs.tools.samtools' : {
-        'rules': ['samtools_merge', 'samtools_sort', 'samtools_index'],
+        'rules': ['samtools_sort', 'samtools_index'],
         'merge' : {
             'inputfun' : _qc_samtools_merge_bam_input_fn,
         },
@@ -317,17 +317,6 @@ Align_trimmed = PlatformUnitApplication(
 
 Align_trimmed.register_post_processing_hook('log')(qc_bowtie2_post_processing_hook)
 apps['Align_trimmed'] = Align_trimmed
-
-
-# Merge Runs Together
-MergeRuns = PlatformUnitApplication(
-    name='merge',
-    iotargets={
-        'merge': (IOTarget(run_id_re.file, suffix=ALIGN_PREFIX + '.trimmed.unique.sort.merged' + ALIGN_SUFFIX), None)
-        },
-    units=_samples,
-)
-
 
 # Coverage Counts
 Htseq = SampleApplication(
