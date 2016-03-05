@@ -142,13 +142,17 @@ if config['settings']['module_load']:
 # Set up conditional rule import
 ## Htseq
 if config['sample.settings']['stranded'].lower() == 'forward':
-    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 
-                                               'htseq_count_copy_forward_to_genic']
+    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 'htseq_count_copy_forward_to_genic']
+    _run_stranded = True
+    _run_nonstranded = False
 elif (config['sample.settings']['stranded'].lower() == 'reverse') or (config['sample.settings']['stranded'] is True):
-    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 
-                                               'htseq_count_copy_reverse_to_genic']
+    config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_forward', 'htseq_count_reverse', 'htseq_count_nonstranded_intergenic', 'htseq_count_copy_reverse_to_genic']
+    _run_stranded = True
+    _run_nonstranded = False
 elif (config['sample.settings']['stranded'].lower() == 'nonstranded') or (config['sample.settings']['stranded'] is False):
     config['bio.ngs.rnaseq.htseq']['rules'] = ['htseq_count_nonstranded', 'htseq_count_nonstranded_intergenic', 'htseq_count_copy_nonstranded_to_genic']
+    _run_stranded = False
+    _run_nonstranded = True
 else:
     raise Exception("you must set sample.settings['stranded'] to one of {True, False, forward, reverse, nonstranded}. True assumes reverse stranded and False assumes nonstranded.")
 
@@ -181,9 +185,9 @@ include: join(OLIVER_RULES_PATH, 'tools', 'counting.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'htseq.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'deseq2.rules')
 
-localrules: (deseq2, agg_align, agg_htseq, dge_report, link_tophat2,
-             htseq_count_copy_forward_to_genic, htseq_count_copy_reverse_to_genic, 
-             htseq_count_copy_nonstranded_to_genic)
+localrules: deseq2, agg_align, agg_htseq, dge_report, link_tophat2, \
+             htseq_count_copy_forward_to_genic, htseq_count_copy_reverse_to_genic, \
+             htseq_count_copy_nonstranded_to_genic
 
 ##############################
 # Workflow-specific rules
@@ -255,13 +259,6 @@ apps['Counts'] = Counts
 
 ## Sample Level
 ### Genic Coverage Counts
-if config['sample.settings']['stranded']:
-    _run_stranded = True
-    _run_nonstranded = False
-else:
-    _run_stranded = False
-    _run_nonstranded = True
-
 HtseqStranded = SampleApplication(
     name="htseq",
     iotargets={
@@ -283,7 +280,7 @@ HtseqNonstranded = SampleApplication(
                         IOAggregateTarget(os.path.join(config['dge.workflow']['aggregate_output_dir'], "Nonstranded.htseq.counts"))),
     },
     units=_samples,
-    run=_run_stranded
+    run=_run_nonstranded
 )
 HtseqNonstranded.register_aggregate_post_processing_hook('nonstranded')(dge_htseq_post_processing_hook)
 

@@ -2,7 +2,7 @@
 
 rule deseq2_LET:
     input: genic = "{prefix}/genic.htseq.counts",
-           intergenic = "{prefix}/Intergenic.nostrand.htseq.counts"
+           intergenic = "{prefix}/Intergenic.nonstranded.htseq.counts"
     output: "{prefix}/lowExpressionThreshold.txt"
     run:
         import pandas as pd
