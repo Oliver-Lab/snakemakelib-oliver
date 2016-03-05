@@ -326,14 +326,14 @@ rule dge_align:
     input: Align.targets['bam']
 
 rule dge_count:
-    input: Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqNonstranded.targets['nonstranded'] + HtseqInter.targets['intergenic']
+    input: HtseqStranded.targets['forward'] + HtseqStranded.targets['reverse'] + HtseqNonstranded.targets['nonstranded'] + HtseqInter.targets['intergenic']
 
 rule dge_deseq2:
     input: DESeq2_TARGETS
 
 rule debug:
     input: Align.targets['bam'] +\
-           Htseq.targets['forward'] + Htseq.targets['reverse'] + HtseqInter.targets['intergenic'] 
+           HtseqStranded.targets['forward'] + HtseqStranded.targets['reverse'] + HtseqInter.targets['intergenic'] 
 
 rule agg_align:
     input: align = Align.targets['log']
@@ -352,14 +352,13 @@ rule agg_htseq:
             htseq_inter = HtseqInter.aggregate_targets['intergenic']
     run:
         aggregate_results(HtseqStranded)
-        aggregate_results(HtseqStranded)
         aggregate_results(HtseqNonstranded)
         aggregate_results(HtseqInter)
 
 rule dge_report:
     input: align = Align.aggregate_targets['log'],
-           htseq_forward = Htseq.aggregate_targets['forward'],
-           htseq_reverse = Htseq.aggregate_targets['reverse'],
+           htseq_forward = HtseqStranded.aggregate_targets['forward'],
+           htseq_reverse = HtseqStranded.aggregate_targets['reverse'],
            htseq_nonstranded = HtseqNonstranded.aggregate_targets['nonstranded'],
            rulegraph = join(config['dge.workflow']['report_output_dir'], "static/images/dge_all_rulegraph.png")
     output: html = join(config['dge.workflow']['report_output_dir'], "index.html")
