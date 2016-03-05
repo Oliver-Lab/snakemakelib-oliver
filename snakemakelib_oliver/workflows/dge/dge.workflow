@@ -85,6 +85,9 @@ dge_config = {
         'merge' : {
             'inputfun' : _dge_samtools_merge_bam_input_fn,
         },
+        'sort': {
+            'options': '-T {prefix}.tmp'
+        },
     },
     'bio.ngs.rnaseq.tuxedo' : {
         'rules' : [],
