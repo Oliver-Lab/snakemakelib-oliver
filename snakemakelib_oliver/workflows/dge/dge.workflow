@@ -181,7 +181,9 @@ include: join(OLIVER_RULES_PATH, 'tools', 'counting.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'htseq.rules')
 include: join(OLIVER_RULES_PATH, 'rnaseq', 'deseq2.rules')
 
-localrules: deseq2, agg_align, agg_htseq, dge_report, htseq_count_copy_forward_to_genic, htseq_count_copy_reverse_to_genic, htseq_count_copy_nonstranded_to_genic
+localrules: (deseq2, agg_align, agg_htseq, dge_report, link_tophat2,
+             htseq_count_copy_forward_to_genic, htseq_count_copy_reverse_to_genic, 
+             htseq_count_copy_nonstranded_to_genic)
 
 ##############################
 # Workflow-specific rules
