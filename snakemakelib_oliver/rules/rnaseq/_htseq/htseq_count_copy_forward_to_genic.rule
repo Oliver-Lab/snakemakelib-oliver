@@ -3,5 +3,9 @@ rule htseq_count_copy_forward_to_genic:
     output: "{prefix}/genic.htseq.counts"
     params: odir = "{prefix}",
             fcounts = "Forward.htseq.counts",
-            gcounts = "genic.htseq.counts",
-    shell: "cd {params.odir}; ln -s {params.fcounts} {params.gcounts}"
+            gcounts = "genic.htseq.counts"
+    shell: """
+        cd {params.odir}; 
+        ln -sf ./{params.fcounts} ./{params.gcounts};
+        touch {params.gcounts}
+        """
