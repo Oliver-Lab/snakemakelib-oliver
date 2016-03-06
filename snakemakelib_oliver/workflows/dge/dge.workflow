@@ -46,7 +46,10 @@ def _dge_samtools_merge_bam_input_fn(wildcards):
 def _rg_fn(prefix):
     """ function to generate read group """
     m = run_id_re.match(prefix)
-    return '--rg-id {SM}_{PU} --rg-sample {SM} --rg-platform-unit {PU}'.format(SM=m.groupdict()['SM'], PU=m.groupdict()['PU'])
+    if 'PU' in m.groupdict():
+        return '--rg-id {SM}_{PU} --rg-sample {SM} --rg-platform-unit {PU}'.format(SM=m.groupdict()['SM'], PU=m.groupdict()['PU'])
+    else:
+        return '--rg-id {SM} --rg-sample {SM}'.format(SM=m.groupdict()['SM'])
 
 
 ##############################
