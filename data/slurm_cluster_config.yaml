@@ -2,7 +2,7 @@ __default__:
     mem: "2000"
     time: "4:00:00"
 tuxedo_tophat_se:
-    mem: "4000"
+    mem: "8000"
 bowtie2_align_se:
     mem: "4000"
 picard_mark_duplicates:
