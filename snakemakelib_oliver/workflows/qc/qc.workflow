@@ -72,6 +72,9 @@ qc_config = {
         'merge' : {
             'inputfun' : _qc_samtools_merge_bam_input_fn,
         },
+        'sort': {
+            'options': '-T {prefix}.tmp'
+        },
     },
     'bio.ngs.qc.cutadapt' : {
         'rules' : ['cutadapt_cut_single_end'],
@@ -347,7 +350,7 @@ rule run_qc:
            Align.targets['bam'] + Align_trimmed.targets['bam'] + \
            Htseq.targets['forward'] + Htseq.targets['reverse'] 
 
-rule run_align:
+rule qc_align:
     input: Fastqc_bam.targets['report'] + Fastqc_trimmed_bam.targets['report']
 
 rule qc_agg_fastqc:

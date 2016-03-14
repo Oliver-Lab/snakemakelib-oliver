@@ -16,3 +16,5 @@ gatk_realigner_target_creator:
     mem: "10000"
 gatk_indel_realigner:
     mem: "10000"
+samtools_sort:
+    mem: "8000"
