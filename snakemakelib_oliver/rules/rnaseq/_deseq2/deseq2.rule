@@ -5,7 +5,8 @@ rule deseq2:
            genic = "{prefix}/genic.htseq.counts",
            LET = "{prefix}/lowExpressionThreshold.txt"
     output: table="{prefix}/deseq2_results.csv",
-            meta="{prefix}/deseq2_meta.txt"
+            meta="{prefix}/deseq2_meta.txt",
+            rdata="{prefix}/deseq2.RData"
     params: model = config['sample.settings']['model'],
             factors = ','.join(config['sample.settings']['factors'])
     run:
@@ -72,4 +73,5 @@ rule deseq2:
         fn = "{output.meta}"
         write(m, fn)
         write.table(colData(dds), file=fn, append=TRUE, quote=FALSE, sep='\t')
+        save(dds, file="{output.rdata}")
         """)
