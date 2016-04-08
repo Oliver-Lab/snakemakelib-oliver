@@ -8,13 +8,14 @@ rule deseq2:
             meta="{prefix}/deseq2_meta.txt",
             rdata="{prefix}/deseq2.RData"
     params: model = config['sample.settings']['model'],
-            factors = ','.join(config['sample.settings']['factors'])
+            factors = ','.join(config['sample.settings']['factors']),
+            sample_id = config['sample.settings']['sample_id']
     run:
         R("""
         library(DESeq2)
 
         # Import sample information
-        colData = read.table('{input.sampleinfo}', sep=',', header=TRUE)
+        colData = read.table('{input.sampleinfo}', sep=',', header=TRUE, row.names='{params.sample_id}')
 
         modelFactors = strsplit("{params.factors}", ",")[[1]]
         for(i in 1:length(modelFactors)){{
@@ -23,22 +24,16 @@ rule deseq2:
         }}
 
         # Import genic counts
-        genic = read.table("{input.genic}", sep=',', header=TRUE)
+        countData = read.table("{input.genic}", sep=',', header=TRUE, row.names='FBgn')
+        countData = countData[,rownames(colData)]
 
         # remove htseq comment lines that start with '__'
-        noDunder = function(x){{
-            if(grepl('__', x)){{
-                return(FALSE)
-            }} else{{
-                return(TRUE)
-            }}
-        }}
-        genic = genic[apply(genic[1], 1, noDunder),]
+        countData = countData[grep("ERCC", rownames(countData), invert=TRUE),]
+        countData = countData[grep("__", rownames(countData), invert=TRUE),]
 
         # Remove genes that are not expressed in experiment
-        rc = rowSums(genic[,-1])
-        T = genic[rc>0, -1]
-        rownames(T) = genic[rc>0,1]
+        rc = rowSums(countData)
+        T = countData[rc>0,]
 
         # Create DESeq2 data object
         dds = DESeqDataSetFromMatrix(T, colData, {params.model})
@@ -46,7 +41,6 @@ rule deseq2:
 
         # Pre-filter counts below low expression Threshold
         normCounts = counts(dds, normalized=TRUE)
-
         LET = as.numeric(readChar("{input.LET}", nchars=1e6))
         oLET = 2^LET - 1
 
