@@ -226,8 +226,6 @@ raw_run_re = config['sample.settings']['sample_organization'].raw_run_re
 run_id_re = config['sample.settings']['sample_organization'].run_id_re
 sample_re = config['sample.settings']['sample_organization'].sample_re
 
-_rg_fn('output/DamIDseq_1/DamIDseq_1_run1')
-
 ##############################
 # Applications
 ##############################
