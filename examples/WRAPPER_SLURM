@@ -9,6 +9,10 @@ source activate sndevel
 SNAKEFILE=$1
 EXTRA=$2
 
+if [ ! -e slurm_logs ]; then
+    mkdir slurm_logs
+fi
+
 (time snakemake \
     -p \
     --rerun-incomplete \
@@ -20,6 +24,6 @@ EXTRA=$2
     --latency-wait=60 \
     -s $SNAKEFILE \
     $EXTRA \
-    ) > "${SNAKEFILE}.log" 2>&1
+    ) > "${SNAKEFILE}_${EXTRA}.log" 2>&1
 
-mail -s "$SNAKEFILE finished" $USER < "${SNAKEFILE}.log"
+mail -s "$SNAKEFILE finished" $USER < "${SNAKEFILE}_${EXTRA}.log"
