@@ -12,9 +12,13 @@ picard_build_bam_index:
     mem: "10000"
 picard_sort_sam:
     mem: "10000"
+picard_add_or_replace_read_grous:
+    mem: "10000"
 gatk_realigner_target_creator:
     mem: "10000"
 gatk_indel_realigner:
     mem: "10000"
 samtools_sort:
+    mem: "8000"
+starBuild:
     mem: "8000"
