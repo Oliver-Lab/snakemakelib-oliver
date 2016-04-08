@@ -13,6 +13,6 @@ def dge_bowtie2_post_processing_hook(df, **kwargs):
 
 
 def dge_htseq_post_processing_hook(df, **kwargs):
-    df_wide = df.reset_index().pivot_table(values='count', index="FBgn", columns="SM")
+    df_wide = df.reset_index().pivot_table(values='count', index="FBgn", columns="SM", aggfunc='sum')
     #df_wide.columns = df_wide.columns.droplevel()
     return df_wide
