@@ -54,5 +54,13 @@ def combine(input, output):
 # Combine To Run Level
 for r in make_targets(tgt_re=run, samples=_samples):
     m = run_id_re.match(r)
-    l = [x for x in _samples if x['SM'] == m.groupdict()['SM']]
+
+    l = list()
+    for x in _samples:
+        try:
+            if x['SM'] == m.groupdict()['SM'] and x['PU'] == m.groupdict()['PU']:
+                l.append(x)
+        except:
+            if x['SM'] == m.groupdict()['SM']:
+                l.append(x)
     combine(make_targets(raw, samples=l), r)
