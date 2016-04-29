@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 rule summariesFq:
-    input: '{prefix}.fastq.gz'
+    input: '{prefix}' + config['bio.ngs.settings']['fastq_suffix']
     output: '{prefix}.fastq.summary'
     run:
         from snakemakelib_oliver.tools.fastq import FastqSummary
