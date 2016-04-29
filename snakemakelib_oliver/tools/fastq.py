@@ -66,7 +66,7 @@ class FastqSummary(object):
         self.fname = fname
         self.numReads = 0
         self._readLenArray = []
-        self._header = []
+        self._header = ''
         self._qualSet = set()
         self.notes = ''
 
@@ -75,8 +75,8 @@ class FastqSummary(object):
             self.read = read
             self._readLenArray.append(len(read[1]))
             self._qualSet = self._qualSet.union(set(read[3]))
-            self._header.append(read[0])
 
+        self._header = read[0]
         self._parseHeader()
         self.readLen = self._checkReadLen()
         self.score = self._checkReadQual()
@@ -157,40 +157,30 @@ class FastqSummary(object):
         self.flowcellID = ''
         self.lane = ''
         self.pair = ''
-        self.index = ''
 
-        # grab the first read
-        h = self._header[0]
-        h = h.strip()
+        # Strip header string
+        h = self._header.strip()
 
         # Pre CASAVA 1.8
         # @HWUSI-EAS100R:6:73:941:1973#0/1
         pattern = '(\@.*?):(\d+):\d+:\d+:\d+\#(.*)\/(\d)'
         if re.fullmatch(pattern, h):
-            self.index = []
-            for h in self._header:
-                m = re.match(pattern, h)
-                self.index.append(m.groups()[2])
+            m = re.match(pattern, h)
             self.instrument = m.groups()[0]
             self.lane = m.groups()[1]
             self.pair = m.groups()[3]
-            self.index = ':'.join([str(x) for x in set(self.index)])
             return
 
         # CASAVA 1.8
         # @EAS139:136:FC706VJ:2:2104:15343:197393 1:Y:18:ATCACG
         pattern = '(\@.*?):(\d+):(.*?):(\d+):\d+:\d+:\d+ (\d):[Y,N]:\d+:(.*)'
         if re.fullmatch(pattern, h):
-            self.index = []
-            for h in self._header:
-                m = re.match(pattern, h)
-                self.index.append(m.groups()[5])
+            m = re.match(pattern, h)
             self.instrument = m.groups()[0]
             self.runID = m.groups()[1]
             self.flowcellID = m.groups()[2]
             self.lane = m.groups()[3]
             self.pair = m.groups()[4]
-            self.index = ':'.join([str(x) for x in set(self.index)])
             return
 
         # CASAVA 1.8 Truncated
@@ -221,8 +211,8 @@ class FastqSummary(object):
         return md5
 
     def getSummary(self):
-        header = 'fileName,md5sum,numberReads,readLength,qualityScoreType,instrumentName,runID,flowcellID,laneNumber,matePair,index\n'
+        header = 'fileName,md5sum,numberReads,readLength,qualityScoreType,instrumentName,runID,flowcellID,laneNumber,matePair\n'
         res = [os.path.basename(self.fname), self.md5, self.numReads, self.readLen, 
-               self.score, self.instrument, self.runID, self.flowcellID, self.lane, self.pair, self.index]
+               self.score, self.instrument, self.runID, self.flowcellID, self.lane, self.pair]
         return header + ','.join([str(x) for x in res])
 
