@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 rule summariesFq:
-    input: '/home/fearjm/Oliverlab/fastq/160225_run0465/Sample_Cale_ov_1/Cale_ov_1_S95_L008_R1_001.fastq.gz'
-    #output: '{prefix}.fastq.summary'
+    input: '{prefix}.fastq.gz'
+    output: '{prefix}.fastq.summary'
     run:
         from snakemakelib_oliver.tools.fastq import FastqSummary
         fq = FastqSummary(str(input))
         tbl = fq.getSummary()
-        print(tbl)
-        #with open(output[0], 'w') as FH:
-        #    FH.write(tbl)
+        with open(output[0], 'w') as FH:
+            FH.write(tbl)
