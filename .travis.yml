@@ -1,0 +1,9 @@
+os:
+  - linux
+language: c
+sudo: required
+services:
+  - docker
+install: test/travis-setup.sh
+script: test/test.sh
+
