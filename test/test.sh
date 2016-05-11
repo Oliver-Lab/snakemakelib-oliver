@@ -1,5 +1,6 @@
 #!/bin/bash
-
+set -e
 cd /opt/lcdb/examples
-conda env create --file snakemake_env.yaml --channel bioconda --channel r
+conda create -n snake --file requirements.txt --channel bioconda --channel r -y
 source activate snake
+snakemake
