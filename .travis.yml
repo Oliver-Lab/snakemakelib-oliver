@@ -11,5 +11,5 @@ services:
 before_install:
   - docker pull daler/smklo
 
-script: docker run -it -v $(pwd):/opt/lcdb daler/smklo /bin/bash test/test.sh
+script: docker run -it -v $(pwd):/opt/lcdb daler/smklo /bin/bash travis-test.sh
 

@@ -1,0 +1,14 @@
+# -*- snakemake -*-
+
+"""
+Currently just an import test.
+"""
+from os.path import join
+from snakemake.workflow import workflow
+from snakemakelib.io import IOTarget, IOSampleTarget
+from snakemakelib.sample.organization import sample_org
+from snakemakelib_oliver.workflows import OLIVER_WORKFLOWS_PATH
+shell.prefix('set -o pipefail; set -e;')
+workdir: "."
+
+# vim: ft=python
