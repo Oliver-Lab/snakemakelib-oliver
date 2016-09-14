@@ -57,7 +57,7 @@ qc_config = {
         'report_output_dir': 'qc_report',
     },
     'settings' : {
-        'temporary_rules' : [],
+        'temporary_rules' : ['bowtie2_align_se', 'rename_sam', 'rename_trimmed_sam'],
         'protected_rules' : [],
         'tmpdir': '/tmp',
     },
@@ -344,6 +344,10 @@ REPORT_TARGETS = [join(config['qc.workflow']['report_output_dir'], "index.html")
 # Collection rules
 ##############################
 
+# Set temporary and protected outputs
+set_temporary_output(*[workflow.get_rule(x) for x in config['settings']['temporary_rules']])
+set_protected_output(*[workflow.get_rule(x) for x in config['settings']['protected_rules']])
+
 rule run_qc:
     input: Fastqc.targets['report'] + Fastqc_trimmed.targets['report'] + Fastqc_bam.targets['report'] + Fastqc_trimmed_bam.targets['report'] + \
            Cutadapt.targets['cutadapt'] + \
@@ -403,6 +407,3 @@ rule qc_report:
     run:
         qc_summary(config, input, output, apps)
     
-# Set temporary and protected outputs
-set_temporary_output(*[workflow.get_rule(x) for x in config['settings']['temporary_rules']])
-set_protected_output(*[workflow.get_rule(x) for x in config['settings']['protected_rules']])

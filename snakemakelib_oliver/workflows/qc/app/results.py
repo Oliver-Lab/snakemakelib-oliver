@@ -115,8 +115,8 @@ class AlignmentResults(object):
         self.odir = reportDir
 
         # Grab Summary tables
-        app.read_aggregate_data('log', index_col="SM")
-        summaryTable = app.aggregate_data['log'].to_html(classes='table table-striped')
+        app.read_aggregate_data('log')
+        summaryTable = app.aggregate_data['log'].sort(['PU', 'SM']).set_index('SM').to_html(classes='table table-striped')
 
         # Write the resulting html
         tp = ENV.get_template('alignments.html')

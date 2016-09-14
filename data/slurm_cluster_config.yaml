@@ -1,6 +1,8 @@
 __default__:
     mem: "2000"
     time: "4:00:00"
+    gres: "lscratch:0"
+    partition: "niddk,norm,b1"
 tuxedo_tophat_se:
     mem: "8000"
 bowtie2_align_se:
@@ -22,3 +24,6 @@ samtools_sort:
     mem: "8000"
 starBuild:
     mem: "8000"
+summariesFq:
+    mem: "8000"
+    time: "6:00:00"
